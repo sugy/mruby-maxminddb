@@ -276,6 +276,27 @@ static mrb_value mrb_maxminddb_time_zone(mrb_state *mrb, mrb_value self) {
       mrb, (char *)entry_data.utf8_string, entry_data.data_size);
 }
 
+static mrb_value mrb_maxminddb_isp(mrb_state *mrb, mrb_value self) {
+  mrb_maxminddb_data *data = DATA_PTR(self);
+  const char *path[2] = {"isp", NULL};
+
+  if (0 != data->gai_error && MMDB_SUCCESS != data->mmdb_lookup_error)
+    mrb_raise(mrb, E_RUNTIME_ERROR, "call lookup_string");
+
+  MMDB_entry_data_s entry_data;
+  int status =
+      MMDB_aget_value(&(data->lookup_result_s.entry), &entry_data, path);
+
+  if (MMDB_LOOKUP_PATH_DOES_NOT_MATCH_DATA_ERROR == status)
+    return mrb_nil_value();
+
+  if (MMDB_SUCCESS != status)
+    mrb_raise(mrb, E_RUNTIME_ERROR, "MMDB_aget_value error");
+
+  return mrb_str_new(
+      mrb, (char *)entry_data.utf8_string, entry_data.data_size);
+}
+
 void mrb_mruby_maxminddb_gem_init(mrb_state *mrb) {
   struct RClass *maxminddb;
   maxminddb = mrb_define_class(mrb, "MaxMindDB", mrb->object_class);
@@ -301,6 +322,8 @@ void mrb_mruby_maxminddb_gem_init(mrb_state *mrb) {
   mrb_define_method(mrb, maxminddb, "metro_code", mrb_maxminddb_metro_code,
                     MRB_ARGS_NONE());
   mrb_define_method(mrb, maxminddb, "time_zone", mrb_maxminddb_time_zone,
+                    MRB_ARGS_NONE());
+  mrb_define_method(mrb, maxminddb, "isp", mrb_maxminddb_isp,
                     MRB_ARGS_NONE());
   DONE;
 }
